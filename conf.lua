@@ -4,8 +4,8 @@ function love.conf(t)
 	t.version = "0.10.1"
 
 	t.window.title = "Activision The Game"
-	t.window.with = 1280
-	t.window.height = 800
+	t.window.width = 1280
+	t.window.height = 720
 	t.window.borderless = false
 	t.window.resisable = true
 	t.window.minwith = 1
