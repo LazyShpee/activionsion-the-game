@@ -1,6 +1,6 @@
 function love.conf(t)
 	t.title = "Activision The Game"
-	t.author = "Lazysheep & Foxmortal"
+	t.author = "LazyShpee & Foxmortal"
 	t.version = "0.10.1"
 
 	t.window.title = "Activision The Game"
