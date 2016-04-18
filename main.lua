@@ -1,3 +1,16 @@
+local isDown = love.keyboard.isDown
+
+function debug()
+	love.graphics.setColor(180,180,180,255)
+	love.graphics.rectangle("fill", 0,0, 400,200)
+	love.graphics.setColor(220,0,0,255)
+	love.graphics.print(player.x.." - "..player.y, 1, 1)
+	for k, v in ipairs(player.cols) do
+		local r, g, b, a = mapData:getPixel(math.floor(player.x + v[1]), math.floor(player.y + v[2]))
+		love.graphics.print(r, 1, 15 * k)
+	end
+end
+
 function love.load(args)
 	math.randomseed(os.time())
 
@@ -12,16 +25,32 @@ function love.load(args)
 		cols = {
 			{2, 0},
 			{-2, 0},
-			{2, 5},
-			{-2, 5}
+			{2, -5},
+			{-2, -5}
 		},
-		step = 0
+		vert = {
+			{2, 0},
+			{-2, 0},
+			{-2, -5},
+			{2, -5}
+		},
+		step = 0,
+		speed = 10
 	}
-	print(unpack(findPixel(mapImage, mapData, {1, 0, 0, 255})))
+	player.x, player.y = unpack(findPixel(mapImage, mapData, {1, 0, 0, 255}, {remove = true}))
+	player.x = player.x + 0.5
+	player.y = player.y + 0.5
 end
 
 function collide(image, data, x, y, col)
-
+	local colPixels = {}
+	for k, v in ipairs(col) do
+		local r, g, b, a = mapData:getPixel(math.floor(x + v[1]), math.floor(y + v[2]))
+		if a > 0 then
+			colPixels[#colPixels + 1] = {r, g, b, a, x = math.floor(x + v[1]), y = math.floor(y + v[2])}
+		end
+	end
+	return colPixels
 end
 
 function findPixel(image, data, pixel, opt)
@@ -37,6 +66,7 @@ function findPixel(image, data, pixel, opt)
 				pos = {x, y, x = x, y = y}
 				if opt.remove then
 					data:setPixel(x, y, 0, 0, 0, 0)
+					image:refresh()
 				end
 			end
 		end
@@ -81,6 +111,22 @@ function execPixel(image, data, x, y, opt)
 	return ret
 end
 
+function addVerts(verts, x, y)
+	local vert = {}
+	for k, v in ipairs(verts) do
+		vert[(k - 1) * 2 + 1] = v[1] + x
+		vert[(k - 1) * 2 + 2] = v[2] + y
+	end
+	return vert
+end
+
+function renderPlayer()
+	love.graphics.setLineWidth(0)
+	love.graphics.polygon("line", addVerts(player.vert, player.x, player.y))
+
+	love.graphics.points(player.x, player.y)
+end
+
 function renderGame()
 	local w, h = love.graphics.getDimensions()
 	local rectangle = love.graphics.rectangle
@@ -97,20 +143,43 @@ end
 
 function love.draw()
 	love.graphics.setDefaultFilter("nearest")
+	love.graphics.push()
 	love.graphics.scale(10, 10)
 	love.graphics.translate(0, -648)
-	renderGame()
 
+	renderGame()
+	renderPlayer()
+
+	love.graphics.pop()
+	debug()
+end
+
+function tryMove(image, data, obj, x, y, step, mode)
+	if x ~= 0 and #collide(image, data, obj.x + x, obj.y, obj.cols) == 0 then
+		obj.x = obj.x + x
+	end
+	if y ~= 0 and #collide(image, data, obj.x, obj.y + y, obj.cols) == 0 then
+		obj.y = obj.y + y
+	end
+end
+
+function love.update(dt)
+	if isDown("left") then
+		tryMove(mapImage, mapData, player, -player.speed * dt, 0)
+	elseif isDown("right") then
+		tryMove(mapImage, mapData, player, player.speed * dt, 0)
+	end
+	tryMove(mapImage, mapData, player, 0, player.speed * dt)
 end
 
 function love.keypressed(key)
 	if key == 'z' then
-		--pass
+		player.y = player.y - 3
 	elseif key == 's' then
-		--pass
+		player.y = player.y + 1
 	elseif key == 'q' then
-		--pass
+		player.x = player.x - 1
 	elseif key == 'd' then
-		--pass
+		player.x = player.x + 1
 	end
 end
